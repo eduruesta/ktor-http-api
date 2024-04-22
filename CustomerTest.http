@@ -1,8 +1,13 @@
 POST http://127.0.0.1:8080/customer
-Content-Type: application/json
+Content-Type: application/x-www-form-urlencoded
+
+firstName=JetBrains&email=example@jetbrains.com&lastName=Perez
+
+###
+POST http://127.0.0.1:8080/customer
+Content-Type: application/x-www-form-urlencoded
 
 {
-    "id": "101",
     "firstName": "Jane",
     "lastName": "Smith",
     "email": "jane.smith@company.com"
@@ -25,7 +30,6 @@ POST http://127.0.0.1:8080/customer
 Content-Type: application/json
 
 {
-    "id": "300",
     "firstName": "Mary",
     "lastName": "Smith",
     "email": "mary.smith@company.com"

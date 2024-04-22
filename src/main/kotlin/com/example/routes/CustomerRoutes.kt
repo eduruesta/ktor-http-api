@@ -1,45 +1,44 @@
 package com.example.routes
 
-import com.example.models.Customer
-import com.example.models.customerStorage
-import io.ktor.http.*
+import com.example.dao.dao
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.util.*
 
 fun Route.customerRouting() {
     route("/customer") {
         get {
-            if (customerStorage.isNotEmpty()) {
-                call.respond(customerStorage)
-            } else {
-                call.respondText("No customers found", status = HttpStatusCode.OK)
-            }
+            call.respond(mapOf("customer" to dao.allCustomers()))
         }
         get("{id?}") {
-            val id = call.parameters["id"] ?: return@get call.respondText(
-                "Missing id",
-                status = HttpStatusCode.BadRequest
-            )
-            val customer =
-                customerStorage.find { it.id == id } ?: return@get call.respondText(
-                    "No customer with id $id",
-                    status = HttpStatusCode.NotFound
-                )
-            call.respond(customer)
+            val id = call.parameters.getOrFail<Int>("id").toInt()
+            call.respond(mapOf("customer" to dao.customer(id)))
         }
         post {
-            val customer = call.receive<Customer>()
-            customerStorage.add(customer)
-            call.respondText("Customer stored correctly", status = HttpStatusCode.Created)
+            val formParameters = call.receiveParameters()
+            val firstName = formParameters.getOrFail("firstName")
+            val lastName = formParameters.getOrFail("lastName")
+            val email = formParameters.getOrFail("email")
+            val customer = dao.addNewCustomer(firstName, lastName, email)
+            call.respond(mapOf("customer" to customer))
         }
-        delete("{id?}") {
-            val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
-            if (customerStorage.removeIf { it.id == id }) {
-                call.respondText("Customer removed correctly", status = HttpStatusCode.Accepted)
-            } else {
-                call.respondText("Not Found", status = HttpStatusCode.NotFound)
+        post("{id}") {
+            val id = call.parameters.getOrFail<Int>("id").toInt()
+            val formParameters = call.receiveParameters()
+            when (formParameters.getOrFail("_action")) {
+                "update" -> {
+                    val firstName = formParameters.getOrFail("firstName")
+                    val lastName = formParameters.getOrFail("lastName")
+                    val email = formParameters.getOrFail("email")
+                    dao.editCustomer(id, firstName, lastName, email)
+                    call.respondRedirect("/customer/$id")
+                }
+                "delete" -> {
+                    dao.deleteCustomer(id)
+                    call.respondRedirect("/customer")
+                }
             }
         }
     }
